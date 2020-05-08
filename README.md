@@ -18,10 +18,14 @@ import nltk
 nltk.download('wordnet')
 ```
 
-# dataset
+# Dataset
 
-Dataset can be downloaded from Google Drive. Provided by Hu X et al.
+We provide the mini dataset in `/dataset_mini`.
+
+Full dataset can be downloaded from Google Drive. Provided by Hu X et al.
 
 [version 1](https://drive.google.com/drive/folders/1xVhYZjH216aEknDnuLGX0Lnv7KHfHHYp)
 
 [version 2](https://drive.google.com/drive/folders/1Ou9fRsWEKFqH-BvbGOo6mh88XfxZXX7X)
+
+Dataset folder should be organized like `/dataset_mini`, then change the path `dataset_dir` in `config.py`.
