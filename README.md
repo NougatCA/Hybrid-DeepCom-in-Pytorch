@@ -9,7 +9,7 @@ Hu X, Li G, Xia X, et al. Deep code comment generation with hybrid lexical and s
 
 # Requirements
 
-The following code should be run beforehand.
+The following code should be run in advance.
 
 ```python
 import nltk
