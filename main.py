@@ -24,11 +24,11 @@ def _train(vocab_file_path=None, model_file_path=None):
 
     print('\nInitializing the training environments......\n')
     train_instance = train.Train(vocab_file_path=vocab_file_path, model_file_path=model_file_path)
-    print('Environments built successfully.')
-    print('\tSize of training dataset:', train_instance.train_dataset_size)
-    print('\tSize of source code vocabulary:', train_instance.code_vocab_size)
-    print('\tSize of ast of code vocabulary:', train_instance.ast_vocab_size)
-    print('\tSize of code comment vocabulary:', train_instance.nl_vocab_size)
+    print('Environments built successfully.\n')
+    print('Size of training dataset:', train_instance.train_dataset_size)
+    print('\nSize of source code vocabulary:', train_instance.code_vocab_size)
+    print('Size of ast of code vocabulary:', train_instance.ast_vocab_size)
+    print('Size of code comment vocabulary:', train_instance.nl_vocab_size)
 
     if config.validate_during_train:
         print('Validate every', config.validate_every, 'batches and each epoch.')

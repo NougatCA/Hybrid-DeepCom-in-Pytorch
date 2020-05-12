@@ -112,6 +112,8 @@ class Train(object):
         :param criterion: loss function
         :return: avg loss
         """
+        self.optimizer.zero_grad()
+
         # batch: [T, B]
         code_batch, code_seq_lens, code_pos, \
             ast_batch, ast_seq_lens, ast_pos, \
@@ -200,8 +202,7 @@ class Train(object):
         print_loss = 0
         plot_loss = 0
 
-        self.optimizer.zero_grad()
-        criterion = nn.CrossEntropyLoss(ignore_index=utils.get_pad_index(self.nl_vocab))
+        criterion = nn.NLLLoss(ignore_index=utils.get_pad_index(self.nl_vocab))
 
         for epoch in range(config.n_epochs):
             last_print_index = 0

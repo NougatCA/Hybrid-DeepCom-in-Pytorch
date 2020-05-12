@@ -289,12 +289,18 @@ def restore_encoder_outputs(outputs: torch.Tensor, pos) -> torch.Tensor:
     :param pos:
     :return:
     """
-    # outputs = torch.tensor(outputs, device=torch.device('cpu')).transpose(0, 1)     # [B, T/2, H]
-    outputs = outputs.clone().detach().transpose(0, 1).to(torch.device('cpu'))
-    new_outputs = np.zeros_like(outputs.numpy())
-    for i, index in enumerate(pos):
-        new_outputs[index] = outputs[i]
-    return torch.tensor(new_outputs, device=config.device).transpose(0, 1)
+    # outputs = outputs.clone().detach().transpose(0, 1).to(torch.device('cpu'))
+    # new_outputs = np.zeros_like(outputs.numpy())
+    # for i, index in enumerate(pos):
+    #     new_outputs[index] = outputs[i]
+    # return torch.tensor(new_outputs, device=config.device).transpose(0, 1)
+    old_outputs = outputs.clone().detach().cpu()
+    # new_outputs = np.zeros_like(outputs.numpy())
+    for index_t, _ in enumerate(old_outputs):
+        for i, index in enumerate(pos):
+            outputs[index_t][index][:] = old_outputs[index_t][i][:]
+    # return torch.tensor(outputs, device=config.device).transpose(0, 1)
+    return outputs
 
 
 def get_pad_index(vocab: Vocab) -> int:
