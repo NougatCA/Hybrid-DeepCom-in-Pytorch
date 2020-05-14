@@ -20,7 +20,7 @@ class CodePtrDataset(Dataset):
         return len(self.codes)
 
     def __getitem__(self, index):
-        return self.codes[index], self.asts[index], self.nls[index]
+        return self.nls[index], self.nls[index], self.nls[index]
 
     def get_dataset(self):
-        return self.codes, self.asts, self.nls
+        return self.nls, self.nls, self.nls

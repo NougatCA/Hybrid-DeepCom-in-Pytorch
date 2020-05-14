@@ -28,13 +28,20 @@ class Train(object):
                                                  ast_path=config.train_sbt_path,
                                                  nl_path=config.train_nl_path)
         self.train_dataset_size = len(self.train_dataset)
+        # self.train_dataloader = DataLoader(dataset=self.train_dataset,
+        #                                    batch_size=config.batch_size,
+        #                                    shuffle=True,
+        #                                    collate_fn=lambda *args: utils.collate_fn(args,
+        #                                                                              code_vocab=self.code_vocab,
+        #                                                                              ast_vocab=self.ast_vocab,
+        #                                                                              nl_vocab=self.nl_vocab))
         self.train_dataloader = DataLoader(dataset=self.train_dataset,
                                            batch_size=config.batch_size,
                                            shuffle=True,
-                                           collate_fn=lambda *args: utils.collate_fn(args,
-                                                                                     code_vocab=self.code_vocab,
-                                                                                     ast_vocab=self.ast_vocab,
-                                                                                     nl_vocab=self.nl_vocab))
+                                           collate_fn=lambda *args: utils.unsort_collate_fn(args,
+                                                                                            code_vocab=self.code_vocab,
+                                                                                            ast_vocab=self.ast_vocab,
+                                                                                            nl_vocab=self.nl_vocab))
 
         # vocab
         self.code_vocab: utils.Vocab
@@ -99,7 +106,7 @@ class Train(object):
 
     def run_train(self):
         """
-        start train
+        start training
         :return:
         """
         self.train_iter()
@@ -115,9 +122,21 @@ class Train(object):
         self.optimizer.zero_grad()
 
         # batch: [T, B]
-        code_batch, code_seq_lens, code_pos, \
-            ast_batch, ast_seq_lens, ast_pos, \
+        # code_batch, code_seq_lens, code_pos, \
+        #     ast_batch, ast_seq_lens, ast_pos, \
+        #     nl_batch, nl_seq_lens = batch
+        code_batch, code_seq_lens, \
+            ast_batch, ast_seq_lens, \
             nl_batch, nl_seq_lens = batch
+
+        # print(code_batch)
+        # print(code_seq_lens)
+        # print(code_pos)
+        # print(ast_batch)
+        # print(ast_seq_lens)
+        # print(ast_pos)
+        # print(nl_batch)
+        # print(nl_seq_lens)
 
         # encode
         # outputs: [T, B, H]
@@ -128,18 +147,12 @@ class Train(object):
         # print('encoder hidden shape:', code_hidden.shape, ast_hidden.shape)
 
         # restore the code outputs and ast outputs to match the sequence of nl
-        code_outputs = utils.restore_encoder_outputs(code_outputs, code_pos)
-        code_hidden = utils.restore_encoder_outputs(code_hidden, code_pos)
-        ast_outputs = utils.restore_encoder_outputs(ast_outputs, ast_pos)
-        ast_hidden = utils.restore_encoder_outputs(ast_hidden, ast_pos)
+        # code_outputs = utils.restore_encoder_outputs(code_outputs, code_pos)
+        # code_hidden = utils.restore_encoder_outputs(code_hidden, code_pos)
+        # ast_outputs = utils.restore_encoder_outputs(ast_outputs, ast_pos)
+        # ast_hidden = utils.restore_encoder_outputs(ast_hidden, ast_pos)
         # print('restore outputs shape:', code_outputs.shape, ast_outputs.shape)
         # print('restore hidden shape:', code_hidden.shape, ast_hidden.shape)
-
-        # code_outputs, ast_outputs = utils.align_encoder_outputs(code_outputs, ast_outputs)
-        # encoder_outputs = torch.cat((code_outputs, ast_outputs), dim=2)  # [T, B, 2*H]
-        # print('outputs shape:', code_outputs.shape, ast_outputs.shape)
-        # print('encoder outputs shape:', encoder_outputs.shape)
-        # print('encoder hidden shape:', encoder_hidden.shape)
 
         # data for decoder
         code_hidden = code_hidden[:1]   # [1, B, H]
@@ -207,7 +220,8 @@ class Train(object):
         for epoch in range(config.n_epochs):
             last_print_index = 0
             for index_batch, batch in enumerate(self.train_dataloader):
-                # if index_batch == 5:
+
+                # if index_batch == 1:
                 #     break
 
                 batch_size = len(batch[0][0])
@@ -223,16 +237,6 @@ class Train(object):
                 # print train progress details
                 if index_batch % config.print_every == 0:
                     cur_time = time.time()
-                    # new a thread to print
-                    # print_thread = threading.Thread(target=utils.print_train_progress, args=(start_time,
-                    #                                                                          cur_time,
-                    #                                                                          epoch,
-                    #                                                                          config.n_epochs,
-                    #                                                                          index_batch,
-                    #                                                                          batch_size,
-                    #                                                                          self.train_dataset_size,
-                    #                                                                          print_loss))
-                    # print_thread.start()
                     utils.print_train_progress(start_time=start_time, cur_time=cur_time, epoch=epoch,
                                                n_epochs=config.n_epochs, index_batch=index_batch, batch_size=batch_size,
                                                dataset_size=self.train_dataset_size, loss=print_loss,

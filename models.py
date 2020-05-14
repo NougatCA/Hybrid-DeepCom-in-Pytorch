@@ -59,7 +59,7 @@ class Encoder(nn.Module):
                 hidden: [2, B, H]
         """
         embedded = self.embedding(inputs)   # [T, B, embedding_dim]
-        packed = pack_padded_sequence(embedded, seq_lens)
+        packed = pack_padded_sequence(embedded, seq_lens, enforce_sorted=False)
         outputs, hidden = self.gru(packed)
         outputs, _ = pad_packed_sequence(outputs)  # [T, B, 2*H]
         outputs = outputs[:, :, :self.hidden_size] + outputs[:, :, self.hidden_size:]
@@ -143,7 +143,7 @@ class Decoder(nn.Module):
                 attn_weights: [B, 1, T]
         """
         embedded = self.embedding(inputs).unsqueeze(0)      # [1, B, embedding_dim]
-        embedded = self.dropout(embedded)
+        # embedded = self.dropout(embedded)
 
         code_hidden = last_hidden[:, :, :self.hidden_size]    # [1, B, H]
         ast_hidden = last_hidden[:, :, self.hidden_size:]     # [1, B, H]

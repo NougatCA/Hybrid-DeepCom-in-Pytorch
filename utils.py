@@ -181,25 +181,6 @@ def init_vocab(name, lines, trim=False, min_count=None):
     return vocab
 
 
-def align_encoder_outputs(code_outputs: torch.Tensor, ast_outputs: torch.Tensor) -> (torch.Tensor, torch.Tensor):
-    """
-    align two outputs on T, pad shorter one using zeros
-    :param code_outputs: [T_code, B, H]
-    :param ast_outputs: [T_ast, B, H]
-    :return:
-    """
-    code_t, b, h = code_outputs.shape
-    ast_t = ast_outputs.shape[0]
-    if code_t == ast_t:
-        return code_outputs, ast_outputs
-    addition = torch.zeros((abs(code_t - ast_t), b, h), device=config.device)
-    if code_t > ast_t:
-        ast_outputs = torch.cat((ast_outputs, addition), dim=0)
-    else:
-        code_outputs = torch.cat((code_outputs, addition), dim=0)
-    return code_outputs, ast_outputs
-
-
 def init_decoder_inputs(batch_size, vocab: Vocab) -> torch.Tensor:
     """
     initialize the input of decoder
@@ -289,17 +270,14 @@ def restore_encoder_outputs(outputs: torch.Tensor, pos) -> torch.Tensor:
     :param pos:
     :return:
     """
-    # outputs = outputs.clone().detach().transpose(0, 1).to(torch.device('cpu'))
-    # new_outputs = np.zeros_like(outputs.numpy())
+    # old_outputs = outputs.clone().detach().cpu()
+    # old_outputs = old_outputs.transpose(0, 1)
+    # outputs = outputs.transpose(0, 1)
     # for i, index in enumerate(pos):
-    #     new_outputs[index] = outputs[i]
-    # return torch.tensor(new_outputs, device=config.device).transpose(0, 1)
-    old_outputs = outputs.clone().detach().cpu()
-    # new_outputs = np.zeros_like(outputs.numpy())
-    for index_t, _ in enumerate(old_outputs):
-        for i, index in enumerate(pos):
-            outputs[index_t][index][:] = old_outputs[index_t][i][:]
-    # return torch.tensor(outputs, device=config.device).transpose(0, 1)
+    #     outputs[index][:] = old_outputs[i][:]
+    # return outputs.transpose(0, 1)
+    rev_pos = np.argsort(pos)
+    outputs = torch.index_select(outputs, 1, torch.tensor(rev_pos, device=config.device))
     return outputs
 
 
@@ -357,6 +335,50 @@ def collate_fn(batch, code_vocab, ast_vocab, nl_vocab, is_eval=False) -> \
 
     return code_batch, code_seq_lens, code_pos, \
         ast_batch, ast_seq_lens, ast_pos, \
+        nl_batch, nl_seq_lens
+
+
+def unsort_collate_fn(batch, code_vocab, ast_vocab, nl_vocab, is_eval=False) -> \
+        (torch.Tensor, list, list, torch.Tensor, list, list, torch.Tensor, list):
+    """
+    process the batch without sorting
+    :param batch: one batch, first dimension is batch, [B]
+    :param code_vocab: [B, T]
+    :param ast_vocab: [B, T]
+    :param nl_vocab: [B, T]
+    :param is_eval: if True then nl_batch will not be translated and returns the raw data
+    :return:
+    """
+    batch = batch[0]
+    code_batch = []
+    ast_batch = []
+    nl_batch = []
+    for b in batch:
+        code_batch.append(b[0])
+        ast_batch.append(b[1])
+        nl_batch.append(b[2])
+
+    # transfer words to indices including oov words, and append EOS token to each sentence, list
+    code_batch = indices_from_batch(code_batch, code_vocab)  # [B, T]
+    ast_batch = indices_from_batch(ast_batch, ast_vocab)  # [B, T]
+    if not is_eval:
+        nl_batch = indices_from_batch(nl_batch, nl_vocab)  # [B, T]
+
+    code_seq_lens = get_seq_lens(code_batch)
+    ast_seq_lens = get_seq_lens(ast_batch)
+    if not is_eval:
+        nl_seq_lens = get_seq_lens(nl_batch)
+    else:
+        nl_seq_lens = None
+
+    # pad and transpose, [T, B], tensor
+    code_batch = pad_one_batch(code_batch, code_vocab)
+    ast_batch = pad_one_batch(ast_batch, ast_vocab)
+    if not is_eval:
+        nl_batch = pad_one_batch(nl_batch, nl_vocab)
+
+    return code_batch, code_seq_lens, \
+        ast_batch, ast_seq_lens, \
         nl_batch, nl_seq_lens
 
 
@@ -508,3 +530,10 @@ def print_eval_progress(start_time, cur_time, index_batch, batch_size, dataset_s
         percent_complete), end='')
     print('\033[0;31mavg s-bleu\033[0m: {:.4f}, \033[0;31mavg meteor\033[0m: {:.4f}'.format(
         avg_s_bleu, avg_meteor))
+
+
+def print_eval_scores(scores_dict):
+    print('\nEval completed.', end=' ')
+    for name, score in scores_dict.items():
+        print('{}: {}.'.format(name, score), end=' ')
+    print()
