@@ -32,7 +32,7 @@ def _train(vocab_file_path=None, model_file_path=None):
 
     if config.validate_during_train:
         print('Validate every', config.validate_every, 'batches and each epoch.')
-    print('Size of validation dataset:', train_instance.eval_instance.dataset_size)
+        print('Size of validation dataset:', train_instance.eval_instance.dataset_size)
 
     print('\nStart training......\n')
     train_instance.run_train()

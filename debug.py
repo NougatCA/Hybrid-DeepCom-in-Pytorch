@@ -64,12 +64,21 @@ import utils
 # new_outputs = new_outputs.transpose(0, 1)
 #
 # print(new_outputs == outputs)
+
+
+# import torch
+#
+# outputs = [[2, 3, 4, 43, 23, 3561, 234, 234, 234, 2]]
+# outputs = torch.tensor(outputs)
+# print(outputs.shape)
+#
+# topv, topi = outputs.topk(1)
+# print(topv.shape)
+# print(topi)
+
+
 import torch
 
-outputs = [[2, 3, 4, 43, 23, 3561, 234, 234, 234, 2]]
-outputs = torch.tensor(outputs)
-print(outputs.shape)
-
-topv, topi = outputs.topk(1)
-print(topv.shape)
-print(topi)
+last_hidden = torch.rand((1, 8, 16))
+h = last_hidden.repeat(10, 1, 1)
+print(h.shape)

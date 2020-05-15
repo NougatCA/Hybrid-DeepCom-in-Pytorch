@@ -112,10 +112,10 @@ class Eval(object):
             decoder_hidden = torch.cat([code_hidden, ast_hidden], dim=2)  # [1, B, 2*H]
 
             # decode
-            batch_sentences = self.decode(batch_size=batch_size,
-                                          code_outputs=code_outputs,
-                                          ast_outputs=ast_outputs,
-                                          decoder_hidden=decoder_hidden)
+            batch_sentences = self.greedy_decode(batch_size=batch_size,
+                                                 code_outputs=code_outputs,
+                                                 ast_outputs=ast_outputs,
+                                                 decoder_hidden=decoder_hidden)
 
             # translate indices into words both for candidates
             candidates = self.translate_indices(batch_sentences)
@@ -160,8 +160,8 @@ class Eval(object):
 
         return c_bleu, avg_s_bleu, avg_meteor
 
-    def decode(self, batch_size, code_outputs: torch.Tensor,
-               ast_outputs: torch.Tensor, decoder_hidden: torch.Tensor):
+    def greedy_decode(self, batch_size, code_outputs: torch.Tensor,
+                      ast_outputs: torch.Tensor, decoder_hidden: torch.Tensor):
         """
         decode for one batch, sentence by sentence
         :param batch_size:
@@ -309,4 +309,4 @@ class Eval(object):
         return batch_words
 
     def set_state_dict(self, state_dict):
-        self.model.load_state_dict(state_dict)
+        self.model.set_state_dict(state_dict)
