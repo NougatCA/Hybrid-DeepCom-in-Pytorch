@@ -77,33 +77,62 @@ import utils
 # print(topi)
 
 
-import torch
+# import torch
+#
+# T = 10
+# B = 8
+# nl_vocab_size = 32
+#
+# nl_batch = torch.randint(0, nl_vocab_size, [T, B])
+# decoder_outputs = torch.rand(T, B, nl_vocab_size)
+#
+# criterion_1 = torch.nn.NLLLoss()
+# criterion_1.eval()
+#
+# criterion_2 = torch.nn.NLLLoss()
+# criterion_2.eval()
+#
+# with torch.no_grad():
+#     # sentence
+#     loss = 0
+#     for i in range(B):
+#         nl = nl_batch[:][i]
+#         decoder_output = decoder_outputs[:][i][:]
+#         loss += criterion_1(decoder_output, nl)
+#     loss = loss / T
+#     print(loss.item())
+#
+#     # batch
+#     nl_batch = nl_batch.view(-1)
+#     decoder_outputs = decoder_outputs.view(-1, nl_vocab_size)
+#     batch_loss = criterion_2(decoder_outputs, nl_batch)
+#     print(batch_loss.item())
 
-T = 10
-B = 8
-nl_vocab_size = 32
+# import torch
+# from torch.utils.data import Dataset, DataLoader
+#
+#
+# class MyDataset(Dataset):
+#     def __init__(self, size):
+#         self.x = torch.randn(size, 1)
+#
+#     def __getitem__(self, index):
+#         return self.x[index]
+#
+#     def __len__(self):
+#         return len(self.x)
+#
+#
+# dataset = MyDataset(1001)
+#
+# data_loader = DataLoader(dataset,
+#                          batch_size=10)
+#
+# print(len(data_loader))
+#
+# data_loader = DataLoader(dataset,
+#                          batch_size=10,
+#                          drop_last=True)
+#
+# print(len(data_loader))
 
-nl_batch = torch.randint(0, nl_vocab_size, [T, B])
-decoder_outputs = torch.rand(T, B, nl_vocab_size)
-
-criterion_1 = torch.nn.NLLLoss()
-criterion_1.eval()
-
-criterion_2 = torch.nn.NLLLoss()
-criterion_2.eval()
-
-with torch.no_grad():
-    # sentence
-    loss = 0
-    for i in range(B):
-        nl = nl_batch[:][i]
-        decoder_output = decoder_outputs[:][i][:]
-        loss += criterion_1(decoder_output, nl)
-    loss = loss / T
-    print(loss.item())
-
-    # batch
-    nl_batch = nl_batch.view(-1)
-    decoder_outputs = decoder_outputs.view(-1, nl_vocab_size)
-    batch_loss = criterion_2(decoder_outputs, nl_batch)
-    print(batch_loss.item())

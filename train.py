@@ -28,13 +28,6 @@ class Train(object):
                                                  ast_path=config.train_sbt_path,
                                                  nl_path=config.train_nl_path)
         self.train_dataset_size = len(self.train_dataset)
-        # self.train_dataloader = DataLoader(dataset=self.train_dataset,
-        #                                    batch_size=config.batch_size,
-        #                                    shuffle=True,
-        #                                    collate_fn=lambda *args: utils.collate_fn(args,
-        #                                                                              code_vocab=self.code_vocab,
-        #                                                                              ast_vocab=self.ast_vocab,
-        #                                                                              nl_vocab=self.nl_vocab))
         self.train_dataloader = DataLoader(dataset=self.train_dataset,
                                            batch_size=config.batch_size,
                                            shuffle=True,
