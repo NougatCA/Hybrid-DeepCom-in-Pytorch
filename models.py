@@ -287,6 +287,7 @@ class Model(nn.Module):
 
         :param batch:
         :param batch_size:
+        :param nl_vocab:
         :return: decoder_outputs: [T, B, nl_vocab_size]
         """
         # batch: [T, B]

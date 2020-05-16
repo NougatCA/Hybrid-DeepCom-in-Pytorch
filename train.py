@@ -102,7 +102,7 @@ class Train(object):
         self.best_epoch_batch: (int, int) = (None, None)
 
         # eval instance
-        # self.eval_instance = eval.Eval(self.get_cur_state_dict())
+        self.eval_instance = eval.Eval(self.get_cur_state_dict())
 
     def run_train(self):
         """
@@ -124,8 +124,10 @@ class Train(object):
         self.optimizer.zero_grad()
 
         decoder_outputs = self.model(batch, batch_size, self.nl_vocab)     # [T, B, nl_vocab_size]
-        print(decoder_outputs.shape)
-        print(nl_batch.shape)
+
+        decoder_outputs = decoder_outputs.view(-1, config.nl_vocab_size)
+        nl_batch = nl_batch.view(-1)
+
         loss = criterion(decoder_outputs, nl_batch)
         loss.backward()
 
@@ -256,8 +258,8 @@ class Train(object):
                 # print('loss:', loss)
                 # print()
 
-                print_loss += loss
-                plot_loss += loss
+                print_loss += loss.item()
+                plot_loss += loss.item()
 
                 # print train progress details
                 if index_batch % config.print_every == 0:

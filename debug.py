@@ -79,6 +79,31 @@ import utils
 
 import torch
 
-last_hidden = torch.rand((1, 8, 16))
-h = last_hidden.repeat(10, 1, 1)
-print(h.shape)
+T = 10
+B = 8
+nl_vocab_size = 32
+
+nl_batch = torch.randint(0, nl_vocab_size, [T, B])
+decoder_outputs = torch.rand(T, B, nl_vocab_size)
+
+criterion_1 = torch.nn.NLLLoss()
+criterion_1.eval()
+
+criterion_2 = torch.nn.NLLLoss()
+criterion_2.eval()
+
+with torch.no_grad():
+    # sentence
+    loss = 0
+    for i in range(B):
+        nl = nl_batch[:][i]
+        decoder_output = decoder_outputs[:][i][:]
+        loss += criterion_1(decoder_output, nl)
+    loss = loss / T
+    print(loss.item())
+
+    # batch
+    nl_batch = nl_batch.view(-1)
+    decoder_outputs = decoder_outputs.view(-1, nl_vocab_size)
+    batch_loss = criterion_2(decoder_outputs, nl_batch)
+    print(batch_loss.item())

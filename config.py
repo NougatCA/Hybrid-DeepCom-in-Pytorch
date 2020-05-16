@@ -50,13 +50,13 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 # features
 trim_vocab_min_count = False
 trim_vocab_max_size = True
-use_coverage = True
+use_coverage = False
 use_pointer_gen = True
 use_teacher_forcing = True
 use_check_point = False
 save_model_halfway = False
 save_model_every_epoch = False
-validate_during_train = False
+validate_during_train = True
 save_best_model = False
 
 
@@ -79,7 +79,7 @@ batch_size = 8     # 32
 code_encoder_lr = 0.001
 ast_encoder_lr = 0.001
 decoder_lr = 0.01
-n_epochs = 1    # 10
+n_epochs = 10    # 10
 beam_width = 5
 beam_top_sentences = 1     # number of sentences beam decoder decode for one input
 eval_batch_size = 4    # 16
@@ -88,8 +88,8 @@ init_normal_std = 1e-4
 
 
 # visualization and resumes
-print_every = 10  # 1000
+print_every = 100  # 1000
 plot_every = 10     # 100
 save_model_every = 20   # 2000
 save_check_point_every = 10   # 1000
-validate_every = 50     # 2000
+validate_every = 100     # 2000
