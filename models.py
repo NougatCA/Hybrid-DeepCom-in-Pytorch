@@ -282,12 +282,13 @@ class Model(nn.Module):
             self.reduce_hidden.eval()
             self.decoder.eval()
 
-    def forward(self, batch, batch_size, nl_vocab):
+    def forward(self, batch, batch_size, nl_vocab, is_test=False):
         """
 
         :param batch:
         :param batch_size:
         :param nl_vocab:
+        :param is_test: if True, function will return before decoding
         :return: decoder_outputs: [T, B, nl_vocab_size]
         """
         # batch: [T, B]
@@ -325,7 +326,14 @@ class Model(nn.Module):
         # decoder_hidden = torch.cat([code_hidden, ast_hidden], dim=2)    # [1, B, 2*H]
         decoder_hidden = self.reduce_hidden(code_hidden, ast_hidden)  # [1, B, H]
 
-        max_decode_step = min(config.max_code_length, max(nl_seq_lens))
+        if is_test:
+            return code_outputs, ast_outputs, decoder_hidden
+
+        if nl_seq_lens is None:
+            max_decode_step = config.max_code_length
+        else:
+            max_decode_step = min(config.max_code_length, max(nl_seq_lens))
+
         decoder_inputs = utils.init_decoder_inputs(batch_size=batch_size, vocab=nl_vocab)  # [B]
         # print('decoder inputs shape:', decoder_inputs.shape)
         # print('decoder hidden shape:', decoder_hidden.shape)

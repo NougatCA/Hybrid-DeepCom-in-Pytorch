@@ -79,18 +79,20 @@ class Train(object):
                                   model_file_path=model_file_path)
         self.params = list(self.model.code_encoder.parameters()) + \
             list(self.model.ast_encoder.parameters()) + \
+            list(self.model.reduce_hidden.parameters()) + \
             list(self.model.decoder.parameters())
 
         # optimizer
         self.optimizer = Adam([
             {'params': self.model.code_encoder.parameters(), 'lr': config.code_encoder_lr},
             {'params': self.model.ast_encoder.parameters(), 'lr': config.ast_encoder_lr},
+            {'params': self.model.reduce_hidden.parameters(), 'lr': config.reduce_hidden_lr},
             {'params': self.model.decoder.parameters(), 'lr': config.decoder_lr},
             
         ], betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
 
         # best score and model(state dict)
-        self.best_score: float = -1
+        self.min_loss: float = 1000
         self.best_model: dict = {}
         self.best_epoch_batch: (int, int) = (None, None)
 
@@ -283,7 +285,7 @@ class Train(object):
                 if config.validate_during_train and index_batch % config.validate_every == 0:
                     print('\nValidating the model at epoch {}, batch {} on valid dataset......'.format(
                         epoch, index_batch))
-                    self.eval_state_dict(state_dict=self.get_cur_state_dict(), epoch=epoch, batch=index_batch)
+                    self.valid_state_dict(state_dict=self.get_cur_state_dict(), epoch=epoch, batch=index_batch)
 
             # save model every epoch
             if config.save_model_every_epoch:
@@ -295,7 +297,7 @@ class Train(object):
             # validate on the valid dataset every epoch
             if config.validate_during_train:
                 print('\nValidating the model at the end of epoch {} on valid dataset......'.format(epoch))
-                self.eval_state_dict(self.get_cur_state_dict(), epoch=epoch)
+                self.valid_state_dict(self.get_cur_state_dict(), epoch=epoch)
 
         # save the best model
         if config.save_best_model:
@@ -329,25 +331,17 @@ class Train(object):
         state_dict = {
                 'code_encoder': self.model.code_encoder.state_dict(),
                 'ast_encoder': self.model.ast_encoder.state_dict(),
-                'reduce_state': self.model.reduce_hidden.state_dict(),
+                'reduce_hidden': self.model.reduce_hidden.state_dict(),
                 'decoder': self.model.decoder.state_dict(),
                 'optimizer': self.optimizer.state_dict(),
             }
         return state_dict
 
-    def eval_state_dict(self, state_dict, epoch, batch=-1, measure_name='c_bleu'):
+    def valid_state_dict(self, state_dict, epoch, batch=-1):
         self.eval_instance.set_state_dict(state_dict)
-        scores_dict: dict = self.eval_instance.run_eval()
+        loss = self.eval_instance.run_eval()
 
-        if measure_name not in scores_dict:
-            print('\nMeasure name is illegal, replaced with default measure \'c_bleu\'')
-            measure_name = 'c_bleu'
-
-        score = scores_dict[measure_name]
-        if score > self.best_score:
-            self.best_score = score
+        if loss < self.min_loss:
+            self.min_loss = loss
             self.best_model = state_dict
             self.best_epoch_batch = (epoch, batch)
-
-
-

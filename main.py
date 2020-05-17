@@ -1,3 +1,5 @@
+from torch.utils.tensorboard import SummaryWriter
+
 import os
 
 import config
@@ -34,9 +36,16 @@ def _train(vocab_file_path=None, model_file_path=None):
         print('Validate every', config.validate_every, 'batches and each epoch.')
         print('Size of validation dataset:', train_instance.eval_instance.dataset_size)
 
-    print('\nStart training......\n')
-    train_instance.run_train()
-    print('\nModel training is done.')
+    # print('\nStart training......\n')
+    # train_instance.run_train()
+    # print('\nModel training is done.')
+
+    writer = SummaryWriter('runs/CodePtr')
+    for _, batch in enumerate(train_instance.train_dataloader):
+        batch_size = len(batch[0][0])
+        writer.add_graph(train_instance.model, (batch, batch_size, train_instance.nl_vocab))
+        break
+    writer.close()
 
 
 def _test():

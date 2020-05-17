@@ -37,11 +37,10 @@ class Eval(object):
         self.dataset_size = len(self.dataset)
         self.dataloader = DataLoader(dataset=self.dataset,
                                      batch_size=1,
-                                     collate_fn=lambda *args: utils.collate_fn(*args,
-                                                                               code_vocab=self.code_vocab,
-                                                                               ast_vocab=self.ast_vocab,
-                                                                               nl_vocab=self.nl_vocab,
-                                                                               is_eval=True))
+                                     collate_fn=lambda *args: utils.unsort_collate_fn(*args,
+                                                                                      code_vocab=self.code_vocab,
+                                                                                      ast_vocab=self.ast_vocab,
+                                                                                      nl_vocab=self.nl_vocab))
 
         # model
         if isinstance(model, str):
@@ -60,22 +59,22 @@ class Eval(object):
             raise Exception('Parameter \'model\' for class \'Eval\' must be file name or state_dict of the model.')
 
     def run_eval(self):
-        self.eval_iter()
+        loss = self.eval_iter()
+        return loss
 
-
-    # def run_test(self) -> dict:
-    #     """
-    #     start evaluation
-    #     :return: scores dict, key is name and value is score
-    #     """
-    #     c_bleu, avg_s_bleu, avg_meteor = self.eval_iter()
-    #     scores_dict = {
-    #         'c_bleu': c_bleu,
-    #         's_bleu': avg_s_bleu,
-    #         'meteor': avg_meteor
-    #     }
-    #     utils.print_eval_scores(scores_dict)
-    #     return scores_dict
+    def run_test(self) -> dict:
+        """
+        start evaluation
+        :return: scores dict, key is name and value is score
+        """
+        c_bleu, avg_s_bleu, avg_meteor = self.test_iter()
+        scores_dict = {
+            'c_bleu': c_bleu,
+            's_bleu': avg_s_bleu,
+            'meteor': avg_meteor
+        }
+        utils.print_eval_scores(scores_dict)
+        return scores_dict
 
     def eval_one_batch(self, batch, batch_size, criterion):
         """
@@ -88,9 +87,9 @@ class Eval(object):
         with torch.no_grad():
 
             # code_batch and ast_batch: [T, B]
-            # nl_batch is raw data, [B, T]
+            # nl_batch is raw data, [B, T] in tensor
             # nl_seq_lens is None
-            _, _, _, _, nl_batch, _ = batch
+            nl_batch = batch[4]
 
             decoder_outputs = self.model(batch, batch_size, self.nl_vocab)  # [T, B, nl_vocab_size]
 
@@ -100,36 +99,6 @@ class Eval(object):
             loss = criterion(decoder_outputs, nl_batch)
 
             return loss
-
-            # # encode
-            # code_outputs, code_hidden = self.model.code_encoder(code_batch, code_seq_lens)
-            # ast_outputs, ast_hidden = self.model.ast_encoder(ast_batch, ast_seq_lens)
-            #
-            # # restore the code outputs and ast outputs to match the sequence of nl
-            # code_outputs = utils.restore_encoder_outputs(code_outputs, code_pos)
-            # code_hidden = utils.restore_encoder_outputs(code_hidden, code_pos)
-            # ast_outputs = utils.restore_encoder_outputs(ast_outputs, ast_pos)
-            # ast_hidden = utils.restore_encoder_outputs(ast_hidden, ast_pos)
-            #
-            # code_hidden = code_hidden[:1]  # [1, B, H]
-            # ast_hidden = ast_hidden[:1]  # [1, B, H]
-            # decoder_hidden = torch.cat([code_hidden, ast_hidden], dim=2)  # [1, B, 2*H]
-            #
-            # # decode
-            # batch_sentences = self.greedy_decode(batch_size=batch_size,
-            #                                      code_outputs=code_outputs,
-            #                                      ast_outputs=ast_outputs,
-            #                                      decoder_hidden=decoder_hidden)
-            #
-            # # translate indices into words both for candidates
-            # candidates = self.translate_indices(batch_sentences)
-            #
-            # print(candidates)
-            #
-            # # measurement
-            # s_blue_score, meteor_score = utils.measure(batch_size, references=nl_batch, candidates=candidates)
-            #
-            # return nl_batch, candidates, s_blue_score, meteor_score
 
     def eval_iter(self):
         """
@@ -142,45 +111,76 @@ class Eval(object):
         for index_batch, batch in enumerate(self.dataloader):
             batch_size = batch[0].shape[1]
 
-            loss = self.eval_one_batch(batch, batch_size, criterion)
+            loss = self.eval_one_batch(batch, batch_size, criterion=criterion)
             epoch_loss += loss.item()
 
         avg_loss = epoch_loss / len(self.dataloader)
 
-        print('\nValidate completed, avg loss: {:.4f}'.format(avg_loss))
+        print('Validate completed, avg loss: {:.4f}.\n'.format(avg_loss))
+        return avg_loss
 
-    # def test_iter(self):
-    #     """
-    #     evaluate model on self.dataset
-    #     :return: scores
-    #     """
-    #     start_time = time.time()
-    #     total_references = []
-    #     total_candidates = []
-    #     total_s_bleu = 0
-    #     total_meteor = 0
-    #     for index_batch, batch in enumerate(self.dataloader):
-    #         batch_size = batch[0].shape[1]
-    #
-    #         references, candidates, s_blue_score, meteor_score = self.eval_one_batch(batch, batch_size)
-    #         total_s_bleu += s_blue_score
-    #         total_meteor += meteor_score
-    #         total_references += references
-    #         total_candidates += candidates
-    #
-    #         if index_batch % config.print_every == 0:
-    #             cur_time = time.time()
-    #             utils.print_eval_progress(start_time=start_time, cur_time=cur_time, index_batch=index_batch,
-    #                                       batch_size=batch_size, dataset_size=self.dataset_size,
-    #                                       batch_s_bleu=s_blue_score, batch_meteor=meteor_score)
-    #
-    #     # corpus level bleu score
-    #     c_bleu = utils.corpus_bleu_score(references=total_references, candidates=total_candidates)
-    #
-    #     avg_s_bleu = total_s_bleu / self.dataset_size
-    #     avg_meteor = total_meteor / self.dataset_size
-    #
-    #     return c_bleu, avg_s_bleu, avg_meteor
+    def test_one_batch(self, batch, batch_size):
+        """
+
+        :param batch:
+        :param batch_size:
+        :return:
+        """
+        with torch.no_grad():
+            _, _, _, _, nl_batch, _ = batch
+
+            code_outputs, ast_outputs, decoder_hidden = \
+                self.model(batch, batch_size, self.nl_vocab, is_test=True)  # [T, B, nl_vocab_size]
+
+            # decode
+            batch_sentences = self.greedy_decode(batch_size=batch_size,
+                                                 code_outputs=code_outputs,
+                                                 ast_outputs=ast_outputs,
+                                                 decoder_hidden=decoder_hidden)
+
+            # translate indices into words both for candidates
+            candidates = self.translate_indices(batch_sentences)
+
+            # print(candidates)
+
+            # measure
+            s_blue_score, meteor_score = utils.measure(batch_size, references=nl_batch, candidates=candidates)
+
+            return nl_batch, candidates, s_blue_score, meteor_score
+
+
+    def test_iter(self):
+        """
+        evaluate model on self.dataset
+        :return: scores
+        """
+        start_time = time.time()
+        total_references = []
+        total_candidates = []
+        total_s_bleu = 0
+        total_meteor = 0
+        for index_batch, batch in enumerate(self.dataloader):
+            batch_size = batch[0].shape[1]
+
+            references, candidates, s_blue_score, meteor_score = self.test_one_batch(batch, batch_size)
+            total_s_bleu += s_blue_score
+            total_meteor += meteor_score
+            total_references += references
+            total_candidates += candidates
+
+            if index_batch % config.print_every == 0:
+                cur_time = time.time()
+                utils.print_eval_progress(start_time=start_time, cur_time=cur_time, index_batch=index_batch,
+                                          batch_size=batch_size, dataset_size=self.dataset_size,
+                                          batch_s_bleu=s_blue_score, batch_meteor=meteor_score)
+
+        # corpus level bleu score
+        c_bleu = utils.corpus_bleu_score(references=total_references, candidates=total_candidates)
+
+        avg_s_bleu = total_s_bleu / self.dataset_size
+        avg_meteor = total_meteor / self.dataset_size
+
+        return c_bleu, avg_s_bleu, avg_meteor
 
     def greedy_decode(self, batch_size, code_outputs: torch.Tensor,
                       ast_outputs: torch.Tensor, decoder_hidden: torch.Tensor):
@@ -332,3 +332,7 @@ class Eval(object):
 
     def set_state_dict(self, state_dict):
         self.model.set_state_dict(state_dict)
+
+
+class Test(object):
+    pass

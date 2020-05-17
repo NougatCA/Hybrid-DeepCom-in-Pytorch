@@ -338,7 +338,7 @@ def collate_fn(batch, code_vocab, ast_vocab, nl_vocab, is_eval=False) -> \
         nl_batch, nl_seq_lens
 
 
-def unsort_collate_fn(batch, code_vocab, ast_vocab, nl_vocab, is_eval=False) -> \
+def unsort_collate_fn(batch, code_vocab, ast_vocab, nl_vocab, raw_nl=False) -> \
         (torch.Tensor, list, list, torch.Tensor, list, list, torch.Tensor, list):
     """
     process the batch without sorting
@@ -346,7 +346,7 @@ def unsort_collate_fn(batch, code_vocab, ast_vocab, nl_vocab, is_eval=False) -> 
     :param code_vocab: [B, T]
     :param ast_vocab: [B, T]
     :param nl_vocab: [B, T]
-    :param is_eval: if True then nl_batch will not be translated and returns the raw data
+    :param raw_nl: if True then nl_batch will not be translated and returns the raw data
     :return:
     """
     batch = batch[0]
@@ -361,20 +361,17 @@ def unsort_collate_fn(batch, code_vocab, ast_vocab, nl_vocab, is_eval=False) -> 
     # transfer words to indices including oov words, and append EOS token to each sentence, list
     code_batch = indices_from_batch(code_batch, code_vocab)  # [B, T]
     ast_batch = indices_from_batch(ast_batch, ast_vocab)  # [B, T]
-    if not is_eval:
+    if not raw_nl:
         nl_batch = indices_from_batch(nl_batch, nl_vocab)  # [B, T]
 
     code_seq_lens = get_seq_lens(code_batch)
     ast_seq_lens = get_seq_lens(ast_batch)
-    if not is_eval:
-        nl_seq_lens = get_seq_lens(nl_batch)
-    else:
-        nl_seq_lens = None
+    nl_seq_lens = get_seq_lens(nl_batch)
 
     # pad and transpose, [T, B], tensor
     code_batch = pad_one_batch(code_batch, code_vocab)
     ast_batch = pad_one_batch(ast_batch, ast_vocab)
-    if not is_eval:
+    if not raw_nl:
         nl_batch = pad_one_batch(nl_batch, nl_vocab)
 
     return code_batch, code_seq_lens, \
