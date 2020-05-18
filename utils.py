@@ -445,11 +445,11 @@ def measure(batch_size, references, candidates) -> (float, float):
 
     for index_batch in range(batch_size):
         reference = references[index_batch]
-        candidate = candidates[index_batch][0]
+        candidate = candidates[index_batch]
 
         # sentence level bleu score
-        sentence_blue = sentence_bleu_score(reference, candidate)
-        total_s_bleu += sentence_blue
+        sentence_bleu = sentence_bleu_score(reference, candidate)
+        total_s_bleu += sentence_bleu
 
         # meteor score
         meteor = meteor_score(reference, candidate)
@@ -509,9 +509,9 @@ def print_eval_progress(start_time, cur_time, index_batch, batch_size, dataset_s
     avg_s_bleu = batch_s_bleu / batch_size
     avg_meteor = batch_meteor / batch_size
 
-    n_iter = (dataset_size + config.batch_size - 1) // config.batch_size
+    n_iter = (dataset_size + batch_size - 1) // batch_size
     len_iter = len(str(n_iter))
-    percent_complete = (index_batch * config.batch_size + batch_size) / dataset_size * 100
+    percent_complete = (index_batch * batch_size + batch_size) / dataset_size * 100
 
     time_remaining = spend / percent_complete * (100 - percent_complete)
     remain_h, remain_min, remain_s, remain_ms = to_time(time_remaining)

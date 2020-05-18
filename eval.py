@@ -175,16 +175,17 @@ class Test(object):
                 self.model(batch, batch_size, self.nl_vocab, is_test=True)
 
             # decode
-            batch_sentences = self.greedy_decode(batch_size=batch_size,
-                                                 code_outputs=code_outputs,
-                                                 ast_outputs=ast_outputs,
-                                                 decoder_hidden=decoder_hidden)
+            batch_sentences = self.beam_decode(batch_size=batch_size,
+                                               code_outputs=code_outputs,
+                                               ast_outputs=ast_outputs,
+                                               decoder_hidden=decoder_hidden)
 
             # translate indices into words both for candidates
             candidates = self.translate_indices(batch_sentences)
 
-            # print(candidates)
-            # print(nl_batch)
+            # print('Candidates:', candidates)
+            # print('References:', nl_batch)
+            # print()
 
             # measure
             s_blue_score, meteor_score = utils.measure(batch_size, references=nl_batch, candidates=candidates)
