@@ -63,4 +63,4 @@ def _test(model):
 
 if __name__ == '__main__':
     # best_model_dict = _train()
-    _test('best_epoch-0_batch-1000.pt')
+    _test('best_epoch-0_batch-last.pt')

@@ -301,7 +301,7 @@ class Model(nn.Module):
         # print(code_seq_lens)
         # print(ast_batch)
         # print(ast_seq_lens)
-        # print(nl_batch)
+        # print(len(nl_batch))
         # print(nl_seq_lens)
 
         # encode
@@ -351,13 +351,13 @@ class Model(nn.Module):
                                                                    ast_outputs=ast_outputs)
             decoder_outputs[step] = decoder_output
 
-            if config.use_teacher_forcing and random.random() < config.use_teacher_forcing and not self.is_eval:
+            if config.use_teacher_forcing and random.random() < config.teacher_forcing_ratio and not self.is_eval:
                 # use teacher forcing, ground truth to be the next input
                 decoder_inputs = nl_batch[step]
             else:
                 # output of last step to be the next input
                 _, indices = decoder_output.topk(1)  # [B, 1]
-                decoder_inputs = indices.squeeze().detach()  # [B]
+                decoder_inputs = indices.squeeze(1).detach()  # [B]
                 decoder_inputs = decoder_inputs.to(config.device)
 
         return decoder_outputs

@@ -68,7 +68,7 @@ class Eval(object):
         with torch.no_grad():
 
             # code_batch and ast_batch: [T, B]
-            # nl_batch is raw data, [B, T] in tensor
+            # nl_batch is raw data, [B, T] in list
             # nl_seq_lens is None
             nl_batch = batch[4]
 
@@ -183,8 +183,8 @@ class Test(object):
             # translate indices into words both for candidates
             candidates = self.translate_indices(batch_sentences)
 
-            print(candidates)
-            print(nl_batch)
+            # print(candidates)
+            # print(nl_batch)
 
             # measure
             s_blue_score, meteor_score = utils.measure(batch_size, references=nl_batch, candidates=candidates)

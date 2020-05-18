@@ -521,7 +521,7 @@ def print_eval_progress(start_time, cur_time, index_batch, batch_size, dataset_s
     print('\033[0;36mremaining\033[0m: {:2d}h {:2d}min {:2d}s {:3d}ms, '.format(
         remain_h, remain_min, remain_s, remain_ms), end='')
     print('\033[0;33mbatch\033[0m: %*d/%*d, ' %
-          (len_iter, index_batch + 1, len_iter, n_iter), end='')
+          (len_iter, index_batch, len_iter, n_iter), end='')
     print('\033[0;32mpercent complete\033[0m: {:6.2f}%, '.format(
         percent_complete), end='')
     print('\033[0;31mavg s-bleu\033[0m: {:.4f}, \033[0;31mavg meteor\033[0m: {:.4f}'.format(
