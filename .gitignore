@@ -1,1 +1,7 @@
-/.idea
+/dataset_mini/
+/model/
+/runs/
+/vocab/
+/.idea/
+/debug.py
+/__pycache__/

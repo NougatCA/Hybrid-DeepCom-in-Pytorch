@@ -5,7 +5,6 @@ from torch.utils.data import DataLoader
 import os
 import time
 import threading
-import random
 
 import utils
 import config
@@ -105,6 +104,7 @@ class Train(object):
         :return:
         """
         self.train_iter()
+        return self.best_model
 
     def train_one_batch(self, batch, batch_size, criterion):
         """
@@ -282,7 +282,7 @@ class Train(object):
                     pass
 
                 # validate on the valid dataset every config.valid_every batches
-                if config.validate_during_train and index_batch % config.validate_every == 0:
+                if config.validate_during_train and index_batch % config.validate_every == 0 and index_batch != 0:
                     print('\nValidating the model at epoch {}, batch {} on valid dataset......'.format(
                         epoch, index_batch))
                     self.valid_state_dict(state_dict=self.get_cur_state_dict(), epoch=epoch, batch=index_batch)

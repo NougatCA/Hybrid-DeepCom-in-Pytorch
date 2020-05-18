@@ -15,7 +15,7 @@ import config
 
 class Eval(object):
 
-    def __init__(self, model, is_test=False):
+    def __init__(self, model):
 
         # vocabulary
         self.code_vocab = utils.load_vocab_pk(config.code_vocab_path)
@@ -26,18 +26,13 @@ class Eval(object):
         self.nl_vocab_size = len(self.nl_vocab)
 
         # dataset
-        if not is_test:
-            self.dataset = data.CodePtrDataset(code_path=config.valid_code_path,
-                                               ast_path=config.valid_sbt_path,
-                                               nl_path=config.valid_nl_path)
-        else:
-            self.dataset = data.CodePtrDataset(code_path=config.test_code_path,
-                                               ast_path=config.test_sbt_path,
-                                               nl_path=config.test_nl_path)
+        self.dataset = data.CodePtrDataset(code_path=config.valid_code_path,
+                                           ast_path=config.valid_sbt_path,
+                                           nl_path=config.valid_nl_path)
         self.dataset_size = len(self.dataset)
         self.dataloader = DataLoader(dataset=self.dataset,
                                      batch_size=1,
-                                     collate_fn=lambda *args: utils.unsort_collate_fn(*args,
+                                     collate_fn=lambda *args: utils.unsort_collate_fn(args,
                                                                                       code_vocab=self.code_vocab,
                                                                                       ast_vocab=self.ast_vocab,
                                                                                       nl_vocab=self.nl_vocab))
@@ -61,20 +56,6 @@ class Eval(object):
     def run_eval(self):
         loss = self.eval_iter()
         return loss
-
-    def run_test(self) -> dict:
-        """
-        start evaluation
-        :return: scores dict, key is name and value is score
-        """
-        c_bleu, avg_s_bleu, avg_meteor = self.test_iter()
-        scores_dict = {
-            'c_bleu': c_bleu,
-            's_bleu': avg_s_bleu,
-            'meteor': avg_meteor
-        }
-        utils.print_eval_scores(scores_dict)
-        return scores_dict
 
     def eval_one_batch(self, batch, batch_size, criterion):
         """
@@ -119,6 +100,65 @@ class Eval(object):
         print('Validate completed, avg loss: {:.4f}.\n'.format(avg_loss))
         return avg_loss
 
+    def set_state_dict(self, state_dict):
+        self.model.set_state_dict(state_dict)
+
+
+class Test(object):
+
+    def __init__(self, model):
+
+        # vocabulary
+        self.code_vocab = utils.load_vocab_pk(config.code_vocab_path)
+        self.code_vocab_size = len(self.code_vocab)
+        self.ast_vocab = utils.load_vocab_pk(config.ast_vocab_path)
+        self.ast_vocab_size = len(self.ast_vocab)
+        self.nl_vocab = utils.load_vocab_pk(config.nl_vocab_path)
+        self.nl_vocab_size = len(self.nl_vocab)
+
+        # dataset
+        self.dataset = data.CodePtrDataset(code_path=config.test_code_path,
+                                           ast_path=config.test_sbt_path,
+                                           nl_path=config.test_nl_path)
+        self.dataset_size = len(self.dataset)
+        self.dataloader = DataLoader(dataset=self.dataset,
+                                     batch_size=1,
+                                     collate_fn=lambda *args: utils.unsort_collate_fn(args,
+                                                                                      code_vocab=self.code_vocab,
+                                                                                      ast_vocab=self.ast_vocab,
+                                                                                      nl_vocab=self.nl_vocab,
+                                                                                      raw_nl=True))
+
+        # model
+        if isinstance(model, str):
+            self.model = models.Model(code_vocab_size=self.code_vocab_size,
+                                      ast_vocab_size=self.ast_vocab_size,
+                                      nl_vocab_size=self.nl_vocab_size,
+                                      model_file_path=os.path.join(config.model_dir, model),
+                                      is_eval=True)
+        elif isinstance(model, dict):
+            self.model = models.Model(code_vocab_size=self.code_vocab_size,
+                                      ast_vocab_size=self.ast_vocab_size,
+                                      nl_vocab_size=self.nl_vocab_size,
+                                      model_state_dict=model,
+                                      is_eval=True)
+        else:
+            raise Exception('Parameter \'model\' for class \'Test\' must be file name or state_dict of the model.')
+
+    def run_test(self) -> dict:
+        """
+        start test
+        :return: scores dict, key is name and value is score
+        """
+        c_bleu, avg_s_bleu, avg_meteor = self.test_iter()
+        scores_dict = {
+            'c_bleu': c_bleu,
+            's_bleu': avg_s_bleu,
+            'meteor': avg_meteor
+        }
+        utils.print_test_scores(scores_dict)
+        return scores_dict
+
     def test_one_batch(self, batch, batch_size):
         """
 
@@ -127,10 +167,12 @@ class Eval(object):
         :return:
         """
         with torch.no_grad():
-            _, _, _, _, nl_batch, _ = batch
+            nl_batch = batch[4]
 
+            # outputs: [T, B, H]
+            # hidden: [1, B, H]
             code_outputs, ast_outputs, decoder_hidden = \
-                self.model(batch, batch_size, self.nl_vocab, is_test=True)  # [T, B, nl_vocab_size]
+                self.model(batch, batch_size, self.nl_vocab, is_test=True)
 
             # decode
             batch_sentences = self.greedy_decode(batch_size=batch_size,
@@ -141,13 +183,13 @@ class Eval(object):
             # translate indices into words both for candidates
             candidates = self.translate_indices(batch_sentences)
 
-            # print(candidates)
+            print(candidates)
+            print(nl_batch)
 
             # measure
             s_blue_score, meteor_score = utils.measure(batch_size, references=nl_batch, candidates=candidates)
 
             return nl_batch, candidates, s_blue_score, meteor_score
-
 
     def test_iter(self):
         """
@@ -189,12 +231,12 @@ class Eval(object):
         :param batch_size:
         :param code_outputs: [T, B, H]
         :param ast_outputs: [T, B, H]
-        :param decoder_hidden: [1, B, 2*H]
+        :param decoder_hidden: [1, B, H]
         :return: batch_sentences, [B, config.beam_top_sentence]
         """
         batch_sentences = []
         for index_batch in range(batch_size):
-            batch_hidden = decoder_hidden[:, index_batch, :].unsqueeze(1)  # [1, 1, 2*H]
+            batch_hidden = decoder_hidden[:, index_batch, :].unsqueeze(1)  # [1, 1, H]
             batch_code_output = code_outputs[:, index_batch, :].unsqueeze(1)  # [T, 1, H]
             batch_ast_output = ast_outputs[:, index_batch, :].unsqueeze(1)  # [T, 1, H]
 
@@ -211,7 +253,6 @@ class Eval(object):
                                                                              last_hidden=batch_hidden,
                                                                              code_outputs=batch_code_output,
                                                                              ast_outputs=batch_ast_output)
-                batch_hidden = torch.cat([batch_hidden, batch_hidden], dim=2)
                 # log_prob, word_index: [1, 1]
                 _, word_index = decoder_outputs.topk(1)
                 word_index = word_index[0][0].item()
@@ -329,10 +370,3 @@ class Eval(object):
                         words.append(word)
             batch_words.append(words)
         return batch_words
-
-    def set_state_dict(self, state_dict):
-        self.model.set_state_dict(state_dict)
-
-
-class Test(object):
-    pass

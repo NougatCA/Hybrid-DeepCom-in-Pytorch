@@ -338,8 +338,7 @@ def collate_fn(batch, code_vocab, ast_vocab, nl_vocab, is_eval=False) -> \
         nl_batch, nl_seq_lens
 
 
-def unsort_collate_fn(batch, code_vocab, ast_vocab, nl_vocab, raw_nl=False) -> \
-        (torch.Tensor, list, list, torch.Tensor, list, list, torch.Tensor, list):
+def unsort_collate_fn(batch, code_vocab, ast_vocab, nl_vocab, raw_nl=False):
     """
     process the batch without sorting
     :param batch: one batch, first dimension is batch, [B]
@@ -529,8 +528,8 @@ def print_eval_progress(start_time, cur_time, index_batch, batch_size, dataset_s
         avg_s_bleu, avg_meteor))
 
 
-def print_eval_scores(scores_dict):
-    print('\nEval completed.', end=' ')
+def print_test_scores(scores_dict):
+    print('\nTest completed.', end=' ')
     for name, score in scores_dict.items():
         print('{}: {}.'.format(name, score), end=' ')
     print()
