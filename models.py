@@ -208,6 +208,60 @@ class Decoder(nn.Module):
         return outputs, hidden, code_attn_weights, ast_attn_weights
 
 
+class DecoderCatContext(nn.Module):
+
+    def __init__(self, vocab_size, hidden_size=config.hidden_size):
+        super(DecoderCatContext, self).__init__()
+        self.hidden_size = hidden_size
+
+        self.embedding = nn.Embedding(vocab_size, config.embedding_dim)
+        self.dropout = nn.Dropout(config.decoder_dropout_rate)
+        self.code_attention = Attention()
+        self.ast_attention = Attention()
+        # if use dropout, num_layers must greater than 1
+        self.gru = nn.GRU(config.embedding_dim + 2 * self.hidden_size, self.hidden_size)
+        self.out = nn.Linear(2 * self.hidden_size, config.nl_vocab_size)
+
+        init_wt_normal(self.embedding.weight)
+        init_rnn_wt(self.gru)
+        init_linear_wt(self.out)
+
+    def forward(self, inputs: torch.Tensor, last_hidden: torch.Tensor,
+                code_outputs: torch.Tensor, ast_outputs: torch.Tensor) \
+            -> (torch.Tensor, torch.Tensor, torch.Tensor):
+        """
+        forward the net
+        :param inputs: word input of current time step, [B]
+        :param last_hidden: last decoder hidden state, [1, B, H]
+        :param code_outputs: outputs of code encoder, [T, B, H]
+        :param ast_outputs: outputs of ast encoder, [T, B, H]
+        :return: output: [B, nl_vocab_size]
+                hidden: [1, B, H]
+                attn_weights: [B, 1, T]
+        """
+        embedded = self.embedding(inputs).unsqueeze(0)      # [1, B, embedding_dim]
+        # embedded = self.dropout(embedded)
+
+        code_attn_weights = self.code_attention(last_hidden, code_outputs)  # [B, 1, T]
+        code_context = code_attn_weights.bmm(code_outputs.transpose(0, 1))  # [B, 1, H]
+        code_context = code_context.transpose(0, 1)     # [1, B, H]
+
+        ast_attn_weights = self.ast_attention(last_hidden, ast_outputs)  # [B, 1, T]
+        ast_context = ast_attn_weights.bmm(ast_outputs.transpose(0, 1))     # [B, 1, H]
+        ast_context = ast_context.transpose(0, 1)   # [1, B, H]
+
+        context = torch.cat([code_context, ast_context], dim=2)     # [1, B, 2*H]
+
+        rnn_input = torch.cat([embedded, context], dim=2)   # [1, B, embedding_dim + 2*H]
+        outputs, hidden = self.gru(rnn_input, last_hidden)  # output: [1, B, H]
+        outputs = outputs.squeeze(0)    # [B, H]
+        context = context.squeeze(0)    # [B, H]
+        outputs = self.out(torch.cat([outputs, context], 1))    # [B, nl_vocab_size]
+        outputs = F.log_softmax(outputs, dim=1)     # [B, nl_vocab_size]
+
+        return outputs, hidden, code_attn_weights, ast_attn_weights
+
+
 class DecoderWithoutAttn(nn.Module):
     def __init__(self, vocab_size, hidden_size=config.hidden_size):
         super(DecoderWithoutAttn, self).__init__()
@@ -261,7 +315,7 @@ class Model(nn.Module):
         self.code_encoder = Encoder(self.code_vocab_size)
         self.ast_encoder = Encoder(self.ast_vocab_size)
         self.reduce_hidden = ReduceHidden()
-        self.decoder = DecoderWithoutAttn(nl_vocab_size)
+        self.decoder = Decoder(nl_vocab_size)
 
         if config.use_cuda:
             self.code_encoder = self.code_encoder.cuda()
