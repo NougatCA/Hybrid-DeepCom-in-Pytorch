@@ -41,6 +41,10 @@ nl_vocab_txt_path = 'nl_vocab.txt'
 if not os.path.exists(vocab_dir):
     os.makedirs(vocab_dir)
 
+out_dir = 'out/'    # other outputs dir
+if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
+
 
 # device
 use_cuda = torch.cuda.is_available()
@@ -50,14 +54,16 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 # features
 trim_vocab_min_count = False
 trim_vocab_max_size = True
+
 use_coverage = False
 use_pointer_gen = False
 use_teacher_forcing = True
 use_check_point = False
-save_model_halfway = False
-save_model_every_epoch = False
+
 validate_during_train = True
+save_valid_model = True
 save_best_model = True
+save_test_details = True
 
 
 # limitations
@@ -74,13 +80,13 @@ nl_vocab_size = 10000    # 30000
 embedding_dim = 256
 hidden_size = 256
 decoder_dropout_rate = 0.5
-teacher_forcing_ratio = 1
+teacher_forcing_ratio = 0.5
 batch_size = 8     # 32
 code_encoder_lr = 0.001
 ast_encoder_lr = 0.001
 reduce_hidden_lr = 0.001
 decoder_lr = 0.01
-n_epochs = 1    # 10
+n_epochs = 2    # 10
 beam_width = 5
 beam_top_sentences = 1     # number of sentences beam decoder decode for one input
 eval_batch_size = 4    # 16

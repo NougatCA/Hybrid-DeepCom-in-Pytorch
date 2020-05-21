@@ -98,6 +98,10 @@ class Train(object):
         # eval instance
         self.eval_instance = eval.Eval(self.get_cur_state_dict())
 
+        config.model_dir = os.path.join(config.model_dir, utils.get_timestamp())
+        if not os.path.exists(config.model_dir):
+            os.makedirs(config.model_dir)
+
     def run_train(self):
         """
         start training
@@ -234,12 +238,13 @@ class Train(object):
 
     def train_iter(self):
         start_time = time.time()
-        print_loss = 0
+
         plot_loss = 0
 
         criterion = nn.NLLLoss(ignore_index=utils.get_pad_index(self.nl_vocab))
 
         for epoch in range(config.n_epochs):
+            print_loss = 0
             last_print_index = 0
             for index_batch, batch in enumerate(self.train_dataloader):
 
@@ -270,13 +275,6 @@ class Train(object):
                 if index_batch % config.plot_every == 0:
                     pass
 
-                # save model
-                if config.save_model_halfway and index_batch % config.save_model_every == 0:
-                    state_dict = self.get_cur_state_dict()
-                    model_name = 'model_epoch-{}_batch-{}.pt'.format(epoch, index_batch)
-                    save_thread = threading.Thread(target=self.save_model, args=(model_name, state_dict))
-                    save_thread.start()
-
                 # save check point
                 if config.use_check_point and index_batch % config.save_check_point_every == 0:
                     pass
@@ -286,13 +284,6 @@ class Train(object):
                     print('\nValidating the model at epoch {}, batch {} on valid dataset......'.format(
                         epoch, index_batch))
                     self.valid_state_dict(state_dict=self.get_cur_state_dict(), epoch=epoch, batch=index_batch)
-
-            # save model every epoch
-            if config.save_model_every_epoch:
-                state_dict = self.get_cur_state_dict()
-                model_name = 'model_epoch-{}_batch-last.pt'.format(epoch)
-                save_thread = threading.Thread(target=self.save_model, args=(model_name, state_dict))
-                save_thread.start()
 
             # validate on the valid dataset every epoch
             if config.validate_during_train:
@@ -340,6 +331,11 @@ class Train(object):
     def valid_state_dict(self, state_dict, epoch, batch=-1):
         self.eval_instance.set_state_dict(state_dict)
         loss = self.eval_instance.run_eval()
+
+        if config.save_valid_model:
+            model_name = 'model_valid-loss-{:.4f}_epoch-{}_batch-{}.pt'.format(loss, epoch, batch)
+            save_thread = threading.Thread(target=self.save_model, args=(model_name, state_dict))
+            save_thread.start()
 
         if loss < self.min_loss:
             self.min_loss = loss
