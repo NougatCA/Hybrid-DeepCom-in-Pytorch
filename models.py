@@ -384,9 +384,9 @@ class Model(nn.Module):
             return code_outputs, ast_outputs, decoder_hidden
 
         if nl_seq_lens is None:
-            max_decode_step = config.max_code_length
+            max_decode_step = config.max_decode_steps
         else:
-            max_decode_step = min(config.max_code_length, max(nl_seq_lens))
+            max_decode_step = max(nl_seq_lens)
 
         decoder_inputs = utils.init_decoder_inputs(batch_size=batch_size, vocab=nl_vocab)  # [B]
         # print('decoder inputs shape:', decoder_inputs.shape)
