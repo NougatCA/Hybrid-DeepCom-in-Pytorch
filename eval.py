@@ -98,6 +98,7 @@ class Eval(object):
         avg_loss = epoch_loss / len(self.dataloader)
 
         print('Validate completed, avg loss: {:.4f}.\n'.format(avg_loss))
+        config.logger.info('Validate completed, avg loss: {:.4f}.\n'.format(avg_loss))
         return avg_loss
 
     def set_state_dict(self, state_dict):
@@ -207,10 +208,6 @@ class Test(object):
 
             # translate indices into words both for candidates
             candidates = self.translate_indices(batch_sentences)
-
-            # print('Candidates:', candidates)
-            # print('References:', nl_batch)
-            # print()
 
             # measure
             s_blue_score, meteor_score = utils.measure(batch_size, references=nl_batch, candidates=candidates)
@@ -434,7 +431,7 @@ class Test(object):
             for indices in sentences:
                 for index in indices:
                     word = self.nl_vocab.index2word[index]
-                    if not utils.is_special_symbol(word):
+                    if utils.is_unk(word) or not utils.is_special_symbol(word):
                         words.append(word)
             batch_words.append(words)
         return batch_words

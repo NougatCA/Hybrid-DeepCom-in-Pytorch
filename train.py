@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torch.optim import Adam
+from torch.optim import Adam, lr_scheduler
 from torch.utils.data import DataLoader
 import os
 import time
@@ -56,6 +56,9 @@ class Train(object):
                 self.ast_vocab.add_sentence(ast)
                 self.nl_vocab.add_sentence(nl)
 
+            self.origin_code_vocab_size = len(self.code_vocab)
+            self.origin_nl_vocab_size = len(self.nl_vocab)
+
             # trim vocabulary
             self.code_vocab.trim(config.code_vocab_size)
             self.nl_vocab.trim(config.nl_vocab_size)
@@ -89,6 +92,11 @@ class Train(object):
             {'params': self.model.decoder.parameters(), 'lr': config.decoder_lr},
             
         ], betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
+
+        if config.use_lr_decay:
+            self.lr_scheduler = lr_scheduler.StepLR(self.optimizer,
+                                                    step_size=config.lr_decay_every,
+                                                    gamma=config.lr_decay_rate)
 
         # best score and model(state dict)
         self.min_loss: float = 1000
@@ -131,7 +139,7 @@ class Train(object):
         loss.backward()
 
         # address over fit
-        # torch.nn.utils.clip_grad_norm(self.params, 5)
+        torch.nn.utils.clip_grad_norm_(self.params, 5)
 
         self.optimizer.step()
 
@@ -149,16 +157,9 @@ class Train(object):
             last_print_index = 0
             for index_batch, batch in enumerate(self.train_dataloader):
 
-                # if index_batch == 1:
-                #     break
-
                 batch_size = len(batch[0][0])
-                # print('batch_size:', batch_size)
 
                 loss = self.train_one_batch(batch, batch_size, criterion)
-                # print('loss:', loss)
-                # print()
-
                 print_loss += loss.item()
                 plot_loss += loss.item()
 
@@ -184,12 +185,18 @@ class Train(object):
                 if config.validate_during_train and index_batch % config.validate_every == 0 and index_batch != 0:
                     print('\nValidating the model at epoch {}, batch {} on valid dataset......'.format(
                         epoch, index_batch))
+                    config.logger.info('Validating the model at epoch {}, batch {} on valid dataset.'.format(
+                        epoch, index_batch))
                     self.valid_state_dict(state_dict=self.get_cur_state_dict(), epoch=epoch, batch=index_batch)
 
             # validate on the valid dataset every epoch
             if config.validate_during_train:
                 print('\nValidating the model at the end of epoch {} on valid dataset......'.format(epoch))
+                config.logger.info('Validating the model at the end of epoch {} on valid dataset......'.format(epoch))
                 self.valid_state_dict(self.get_cur_state_dict(), epoch=epoch)
+
+            if config.use_lr_decay:
+                self.lr_scheduler.step()
 
         # save the best model
         if config.save_best_model:
