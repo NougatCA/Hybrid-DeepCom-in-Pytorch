@@ -118,7 +118,7 @@ class Train(object):
         :param criterion: loss function
         :return: avg loss
         """
-        _, _, _, _, nl_batch, _ = batch
+        nl_batch = batch[4]
 
         self.optimizer.zero_grad()
 
@@ -136,105 +136,6 @@ class Train(object):
         self.optimizer.step()
 
         return loss
-
-        # self.optimizer.zero_grad()
-        #
-        # # batch: [T, B]
-        # # code_batch, code_seq_lens, code_pos, \
-        # #     ast_batch, ast_seq_lens, ast_pos, \
-        # #     nl_batch, nl_seq_lens = batch
-        # code_batch, code_seq_lens, \
-        #     ast_batch, ast_seq_lens, \
-        #     nl_batch, nl_seq_lens = batch
-        #
-        # # print(code_batch)
-        # # print(code_seq_lens)
-        # # print(code_pos)
-        # # print(ast_batch)
-        # # print(ast_seq_lens)
-        # # print(ast_pos)
-        # # print(nl_batch)
-        # # print(nl_seq_lens)
-        #
-        # print(code_batch)
-        # print(code_seq_lens)
-        # print(ast_batch)
-        # print(ast_seq_lens)
-        # print(nl_batch)
-        # print(nl_seq_lens)
-        #
-        # # encode
-        # # outputs: [T, B, H]
-        # # hidden: [2, B, H]
-        # code_outputs, code_hidden = self.model.code_encoder(code_batch, code_seq_lens)
-        # ast_outputs, ast_hidden = self.model.ast_encoder(ast_batch, ast_seq_lens)
-        # # print('encoder outputs shape:', code_outputs.shape, ast_outputs.shape)
-        # # print('encoder hidden shape:', code_hidden.shape, ast_hidden.shape)
-        #
-        # # restore the code outputs and ast outputs to match the sequence of nl
-        # # code_outputs = utils.restore_encoder_outputs(code_outputs, code_pos)
-        # # code_hidden = utils.restore_encoder_outputs(code_hidden, code_pos)
-        # # ast_outputs = utils.restore_encoder_outputs(ast_outputs, ast_pos)
-        # # ast_hidden = utils.restore_encoder_outputs(ast_hidden, ast_pos)
-        # # print('restore outputs shape:', code_outputs.shape, ast_outputs.shape)
-        # # print('restore hidden shape:', code_hidden.shape, ast_hidden.shape)
-        #
-        # # data for decoder
-        # code_hidden = code_hidden[:1]   # [1, B, H]
-        # ast_hidden = ast_hidden[:1]     # [1, B, H]
-        # # decoder_hidden = torch.cat([code_hidden, ast_hidden], dim=2)    # [1, B, 2*H]
-        # decoder_hidden = self.model.reduce_hidden(code_hidden, ast_hidden)  # [1, B, H]
-        #
-        # target_length = max(nl_seq_lens)
-        # decoder_inputs = utils.init_decoder_inputs(batch_size=batch_size, vocab=self.nl_vocab)  # [B]
-        # # print('decoder inputs shape:', decoder_inputs.shape)
-        # # print('decoder hidden shape:', decoder_hidden.shape)
-        #
-        # # decode
-        # loss: torch.Tensor = torch.tensor(0.).to(config.device)
-        #
-        # # whether use teacher forcing
-        # if config.use_teacher_forcing and random.random() < config.use_teacher_forcing:
-        #     for step in range(min(config.max_decode_steps, target_length)):
-        #         # decoder_outputs: [B, nl_vocab_size]
-        #         # decoder_hidden: [1, B, H]
-        #         # attn_weights: [B, 1, T]
-        #         decoder_outputs, decoder_hidden, \
-        #             code_attn_weights, ast_attn_weights = self.model.decoder(inputs=decoder_inputs,
-        #                                                                      last_hidden=decoder_hidden,
-        #                                                                      code_outputs=code_outputs,
-        #                                                                      ast_outputs=ast_outputs)
-        #         # use ground truth to be the next input of decoder
-        #         decoder_inputs = nl_batch[step]
-        #         # decoder_hidden = torch.cat([decoder_hidden, decoder_hidden], dim=2)
-        #         loss += criterion(decoder_outputs, nl_batch[step])
-        # else:
-        #     for step in range(min(config.max_decode_steps, target_length)):
-        #         # decoder_outputs: [B, nl_vocab_size]
-        #         # decoder_hidden: [1, B, H]
-        #         # attn_weights: [B, 1, T]
-        #         decoder_outputs, decoder_hidden, \
-        #             code_attn_weights, ast_attn_weights = self.model.decoder(inputs=decoder_inputs,
-        #                                                                      last_hidden=decoder_hidden,
-        #                                                                      code_outputs=code_outputs,
-        #                                                                      ast_outputs=ast_outputs)
-        #         # use the output of decoder to be the next input of decoder
-        #         _, indices = decoder_outputs.topk(1)  # [B, 1]
-        #         decoder_inputs = indices.squeeze().detach()  # [B]
-        #         decoder_inputs = decoder_inputs.to(config.device)
-        #         # decoder_hidden = torch.cat([decoder_hidden, decoder_hidden], dim=2)
-        #         loss += criterion(decoder_outputs, nl_batch[step])
-        #
-        # loss.backward()
-        #
-        # # address over fit
-        # # torch.nn.utils.clip_grad_norm(self.params, 5)
-        #
-        # # optimize
-        # self.optimizer.step()
-        #
-        # return loss.item() / target_length
-        # # return 0
 
     def train_iter(self):
         start_time = time.time()

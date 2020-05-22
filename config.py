@@ -47,6 +47,7 @@ if not os.path.exists(out_dir):
 
 
 # device
+# use_cuda = False
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
 
@@ -77,6 +78,7 @@ max_decode_steps = 30
 vocab_min_count = 5
 code_vocab_size = 10000  # 30000
 nl_vocab_size = 10000    # 30000
+
 embedding_dim = 256
 hidden_size = 256
 decoder_dropout_rate = 0.5
@@ -87,9 +89,11 @@ ast_encoder_lr = 0.001
 reduce_hidden_lr = 0.001
 decoder_lr = 0.01
 n_epochs = 2    # 10
+
 beam_width = 5
 beam_top_sentences = 1     # number of sentences beam decoder decode for one input
 eval_batch_size = 4    # 16
+test_batch_size = 4
 init_uniform_mag = 0.02
 init_normal_std = 1e-4
 

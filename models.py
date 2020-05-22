@@ -148,6 +148,8 @@ class Attention(nn.Module):
         # after cat: [B, T, 2*H]
         # after attn: [B, T, H]
         # energy: [B, T, H]
+        # print(hidden.shape)
+        # print(encoder_outputs.shape)
         energy = F.relu(self.attn(torch.cat([hidden, encoder_outputs], dim=2)))
         energy = energy.transpose(1, 2)     # [B, H, T]
         v = self.v.repeat(encoder_outputs.size(0), 1).unsqueeze(1)      # [B, 1, H]
@@ -200,7 +202,7 @@ class Decoder(nn.Module):
         context = code_context + ast_context    # [1, B, H]
 
         rnn_input = torch.cat([embedded, context], dim=2)   # [1, B, embedding_dim + H]
-        outputs, hidden = self.gru(rnn_input, last_hidden)  # output: [1, B, H]
+        outputs, hidden = self.gru(rnn_input, last_hidden)  # [1, B, H] for both
         outputs = outputs.squeeze(0)    # [B, H]
         context = context.squeeze(0)    # [B, H]
         outputs = self.out(torch.cat([outputs, context], 1))    # [B, nl_vocab_size]
@@ -208,6 +210,7 @@ class Decoder(nn.Module):
         return outputs, hidden, code_attn_weights, ast_attn_weights
 
 
+'''
 class DecoderCatContext(nn.Module):
 
     def __init__(self, vocab_size, hidden_size=config.hidden_size):
@@ -298,6 +301,7 @@ class DecoderWithoutAttn(nn.Module):
         outputs = self.out(outputs)  # [B, nl_vocab_size]
         outputs = F.log_softmax(outputs, dim=1)  # [B, nl_vocab_size]
         return outputs, hidden, None, None
+'''
 
 
 class Model(nn.Module):
