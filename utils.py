@@ -506,7 +506,7 @@ def ir_score():
     pass
 
 
-def print_eval_progress(start_time, cur_time, index_batch, batch_size, dataset_size, batch_s_bleu, batch_meteor):
+def print_test_progress(start_time, cur_time, index_batch, batch_size, dataset_size, batch_s_bleu, batch_meteor):
     spend = cur_time - start_time
     spend_h, spend_min, spend_s, spend_ms = to_time(spend)
 

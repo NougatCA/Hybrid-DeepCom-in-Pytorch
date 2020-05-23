@@ -1,11 +1,9 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-import numpy as np
 
 import os
 import time
-import threading
 
 import models
 import data
@@ -245,7 +243,7 @@ class Test(object):
 
             if index_batch % config.print_every == 0:
                 cur_time = time.time()
-                utils.print_eval_progress(start_time=start_time, cur_time=cur_time, index_batch=index_batch,
+                utils.print_test_progress(start_time=start_time, cur_time=cur_time, index_batch=index_batch,
                                           batch_size=batch_size, dataset_size=self.dataset_size,
                                           batch_s_bleu=s_blue_score, batch_meteor=meteor_score)
 

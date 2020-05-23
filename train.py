@@ -192,7 +192,7 @@ class Train(object):
             # validate on the valid dataset every epoch
             if config.validate_during_train:
                 print('\nValidating the model at the end of epoch {} on valid dataset......'.format(epoch))
-                config.logger.info('Validating the model at the end of epoch {} on valid dataset......'.format(epoch))
+                config.logger.info('Validating the model at the end of epoch {} on valid dataset.'.format(epoch))
                 self.valid_state_dict(self.get_cur_state_dict(), epoch=epoch)
 
             if config.use_lr_decay:

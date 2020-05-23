@@ -1,5 +1,3 @@
-from torch.utils.tensorboard import SummaryWriter
-
 import os
 
 import config
@@ -39,10 +37,12 @@ def _train(vocab_file_path=None, model_file_path=None):
     print('\nSize of code comment vocabulary:', train_instance.origin_nl_vocab_size, '->', train_instance.nl_vocab_size)
     print('Code comment OOV rate: {:.2f}%'.format(nl_oov_rate * 100))
     config.logger.info('Size of train dataset:{}'.format(train_instance.train_dataset_size))
-    config.logger.info('Size of source code vocabulary: {}'.format(train_instance.code_vocab_size))
+    config.logger.info('Size of source code vocabulary: {} -> {}'.format(
+        train_instance.origin_code_vocab_size, train_instance.code_vocab_size))
     config.logger.info('Source code OOV rate: {:.2f}%'.format(code_oov_rate * 100))
     config.logger.info('Size of ast of code vocabulary: {}'.format(train_instance.ast_vocab_size))
-    config.logger.info('Size of code comment vocabulary: {}'.format(train_instance.nl_vocab_size))
+    config.logger.info('Size of code comment vocabulary: {} -> {}'.format(
+        train_instance.origin_nl_vocab_size, train_instance.nl_vocab_size))
     config.logger.info('Code comment OOV rate: {:.2f}%'.format(nl_oov_rate * 100))
 
     if config.validate_during_train:
