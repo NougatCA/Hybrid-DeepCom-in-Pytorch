@@ -103,6 +103,37 @@ class Vocab(object):
         return self.num_words
 
 
+class EarlyStopping(object):
+
+    def __init__(self, patience=config.early_stopping_patience, verbose=False, delta=0):
+        """
+
+        :param patience: How long to wait after last time validation loss improved
+        :param verbose: If True, prints a message for each validation loss improvement
+        :param delta: Minimum change in the monitored quantity to qualify as an improvement
+        """
+        self.patience = patience
+        self.verbose = verbose
+        self.counter = 0
+        self.min_valid_loss = None
+        self.early_stop = False
+        self.delta = delta
+
+    def __call__(self, valid_loss):
+
+        if self.min_valid_loss is None:
+            self.min_valid_loss = valid_loss
+        elif valid_loss > self.min_valid_loss - self.delta:
+            self.counter += 1
+            print('EarlyStopping counter: {} out of {}.\n'.format(self.counter, self.patience))
+            if self.counter >= self.patience:
+                self.early_stop = True
+                print('Early stop.\n')
+        else:
+            self.min_valid_loss = valid_loss
+            self.counter = 0
+
+
 def load_vocab_pk(file_name) -> Vocab:
     """
     load pickle file by given file name
