@@ -96,7 +96,7 @@ class Eval(object):
         avg_loss = epoch_loss / len(self.dataloader)
 
         print('Validate completed, avg loss: {:.4f}.\n'.format(avg_loss))
-        config.logger.info('Validate completed, avg loss: {:.4f}.\n'.format(avg_loss))
+        config.logger.info('Validate completed, avg loss: {:.4f}.'.format(avg_loss))
         return avg_loss
 
     def set_state_dict(self, state_dict):
@@ -222,6 +222,7 @@ class Test(object):
         total_candidates = []
         total_s_bleu = 0
         total_meteor = 0
+        sample_id = 0
 
         out_file = None
         if config.save_test_details:
@@ -249,9 +250,11 @@ class Test(object):
 
             if config.save_test_details:
                 for index in range(len(references)):
+                    out_file.write('Sample {}:\n'.format(sample_id))
                     out_file.write(' '.join(['Reference:'] + references[index]) + '\n')
                     out_file.write(' '.join(['Candidate:'] + candidates[index]) + '\n')
                     out_file.write('\n')
+                    sample_id += 1
 
         # corpus level bleu score
         c_bleu = utils.corpus_bleu_score(references=total_references, candidates=total_candidates)

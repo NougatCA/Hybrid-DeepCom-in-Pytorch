@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 import os
 import time
 import threading
+import matplotlib.pyplot as plt
 
 import utils
 import config
@@ -153,13 +154,15 @@ class Train(object):
     def train_iter(self):
         start_time = time.time()
 
-        plot_loss = 0
+        plot_losses = []
 
         criterion = nn.NLLLoss(ignore_index=utils.get_pad_index(self.nl_vocab))
 
         for epoch in range(config.n_epochs):
             print_loss = 0
+            plot_loss = 0
             last_print_index = 0
+            last_plot_index = 0
             for index_batch, batch in enumerate(self.train_dataloader):
 
                 batch_size = len(batch[0][0])
@@ -180,7 +183,12 @@ class Train(object):
 
                 # plot train progress details
                 if index_batch % config.plot_every == 0:
-                    pass
+                    batch_length = index_batch - last_plot_index
+                    if batch_length != 0:
+                        plot_loss = plot_loss / batch_length
+                    plot_losses.append(plot_loss)
+                    plot_loss = 0
+                    last_plot_index = index_batch
 
                 # save check point
                 if config.use_check_point and index_batch % config.save_check_point_every == 0:
@@ -213,6 +221,12 @@ class Train(object):
 
             if config.use_lr_decay:
                 self.lr_scheduler.step()
+
+        plt.xlabel('every {} batches'.format(config.plot_every))
+        plt.ylabel('avg loss')
+        plt.plot(plot_losses)
+        plt.savefig(os.path.join(config.out_dir, 'train_loss_{}.svg'.format(utils.get_timestamp())),
+                    dpi=600, format='svg')
 
         # save the best model
         if config.save_best_model:
