@@ -126,9 +126,11 @@ class EarlyStopping(object):
         elif valid_loss > self.min_valid_loss - self.delta:
             self.counter += 1
             print('EarlyStopping counter: {} out of {}.\n'.format(self.counter, self.patience))
+            config.logger.info('EarlyStopping counter: {} out of {}.'.format(self.counter, self.patience))
             if self.counter >= self.patience:
                 self.early_stop = True
                 print('Early stop.\n')
+                config.logger.info('Early stop.')
         else:
             self.min_valid_loss = valid_loss
             self.counter = 0
@@ -570,3 +572,9 @@ def print_test_scores(scores_dict):
         print('{}: {}.'.format(name, score), end=' ')
         config.logger.info('{}: {}.'.format(name, score))
     print()
+
+
+def save_pickle(obj, path):
+    with open(path, 'wb') as file:
+        pickle.dump(obj, file)
+

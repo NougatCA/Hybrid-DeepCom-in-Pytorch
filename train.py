@@ -227,6 +227,7 @@ class Train(object):
         plt.plot(plot_losses)
         plt.savefig(os.path.join(config.out_dir, 'train_loss_{}.svg'.format(utils.get_timestamp())),
                     dpi=600, format='svg')
+        utils.save_pickle(plot_losses, os.path.join(config.out_dir, 'plot_losses_{}.pk'.format(utils.get_timestamp())))
 
         # save the best model
         if config.save_best_model:
