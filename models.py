@@ -262,8 +262,10 @@ class Model(nn.Module):
         ast_outputs, ast_hidden = self.ast_encoder(ast_batch, ast_seq_lens)
 
         # data for decoder
-        code_hidden = code_hidden[:1]  # [1, B, H]
-        ast_hidden = ast_hidden[:1]  # [1, B, H]
+        code_hidden = code_hidden[0] + code_hidden[1]   # [B, H]
+        code_hidden = code_hidden.unsqueeze(0)          # [1, B, H]
+        ast_hidden = ast_hidden[0] + ast_hidden[1]  # [B, H]
+        ast_hidden = ast_hidden.unsqueeze(0)       # [1, B, H]
         decoder_hidden = self.reduce_hidden(code_hidden, ast_hidden)  # [1, B, H]
 
         if is_test:
